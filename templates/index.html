@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriScan — AI Crop Disease Detection</title>
+  <meta name="description" content="AgriScan uses deep learning to detect crop diseases from leaf images in real time, providing treatment recommendations and GradCAM visualizations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <!-- ─── Background decorations ──────────────────────────────────────────── -->
+  <div class="bg-glow bg-glow--green"></div>
+  <div class="bg-glow bg-glow--teal"></div>
+  <div class="bg-glow bg-glow--amber"></div>
+
+  <!-- ─── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="navbar__logo">
+      <span class="navbar__icon">🌿</span>
+      <span class="navbar__name">AgriScan</span>
+      <span id="nav-tagline" class="navbar__tagline" data-i18n="nav_tagline">AI-Powered Plant Health</span>
+    </div>
+    <div class="navbar__links">
+      <div class="language-select-wrapper">
+        <select id="language-select" class="language-select">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+          <option value="bn">বাংলা (Bengali)</option>
+        </select>
+      </div>
+      <a href="#upload-section" class="navbar__link" data-i18n="nav_analyze">Analyze</a>
+      <a href="#about-section" class="navbar__link" data-i18n="nav_about">About</a>
+      <span id="status-dot" class="status-dot status-dot--loading" title="Checking server..."></span>
+    </div>
+  </nav>
+
+  <!-- ─── Hero ───────────────────────────────────────────────────────────── -->
+  <header class="hero">
+    <div class="hero__badge">
+      <span class="hero__badge-dot"></span>
+      Powered by EfficientNetB0 + Transfer Learning
+    </div>
+    <h1 class="hero__title">
+      <span data-i18n="hero_title_1">Detect Crop Diseases</span><br />
+      <span class="hero__title--accent" data-i18n="hero_title_accent">Instantly with AI</span>
+    </h1>
+    <p class="hero__subtitle" data-i18n="hero_subtitle">
+      Upload a leaf image and get an accurate disease diagnosis, confidence score, 
+      treatment recommendations, and a GradCAM heatmap showing exactly 
+      where the model detected the issue — all in seconds.
+    </p>
+    <div class="hero__stats">
+      <div class="hero__stat">
+        <span class="hero__stat-value">38</span>
+        <span class="hero__stat-label" data-i18n="hero_stat_classes">Disease Classes</span>
+      </div>
+      <div class="hero__stat-divider"></div>
+      <div class="hero__stat">
+        <span class="hero__stat-value">15</span>
+        <span class="hero__stat-label" data-i18n="hero_stat_crops">Crop Types</span>
+      </div>
+      <div class="hero__stat-divider"></div>
+      <div class="hero__stat">
+        <span class="hero__stat-value">GradCAM</span>
+        <span class="hero__stat-label" data-i18n="hero_stat_xai">XAI Visualization</span>
+      </div>
+    </div>
+
+    <!-- NEW: Supported Crops List -->
+    <div class="supported-crops-box">
+      <span class="supported-crops-label" data-i18n="supported_crops_label">✅ Supported Crops:</span>
+      <span class="supported-crops-list">Apple, Banana (New!), Blueberry, Cherry, Corn, Grape, Orange, Peach, Pepper, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato</span>
+    </div>
+  </header>
+
+  <!-- ─── Main Content ────────────────────────────────────────────────────── -->
+  <main class="main">
+    <!-- Upload Section -->
+    <section id="upload-section" class="upload-section">
+      <div class="upload-card">
+        <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Upload leaf image">
+          <div class="drop-zone__inner" id="drop-inner">
+            <div class="drop-zone__icon-wrap">
+              <div class="drop-zone__icon">🍃</div>
+              <div class="drop-zone__icon-ring"></div>
+            </div>
+            <p class="drop-zone__title" data-i18n="drop_title">Drop your leaf image here</p>
+            <p class="drop-zone__sub" data-i18n="drop_sub">or <span class="drop-zone__link">click to browse</span></p>
+            <p class="drop-zone__hint" data-i18n="drop_hint">Supports JPG, PNG, WEBP · Max 10MB</p>
+          </div>
+          <img id="preview-img" class="drop-zone__preview hidden" alt="Uploaded leaf" />
+          <button id="clear-btn" class="drop-zone__clear hidden" type="button" aria-label="Clear image">✕</button>
+        </div>
+        <input type="file" id="file-input" accept="image/*" class="hidden" />
+        <button id="analyze-btn" class="analyze-btn" disabled aria-label="Analyze disease">
+          <span class="analyze-btn__icon">🔬</span>
+          <span class="analyze-btn__text" data-i18n="analyze_btn">Analyze Disease</span>
+          <div class="analyze-btn__spinner hidden"></div>
+        </button>
+        <p id="demo-notice" class="demo-notice hidden">
+          <span class="pulse-icon">⚠️</span> 
+          <strong data-i18n="virtual_demo_mode">VIRTUAL DEMO MODE</strong> <span data-i18n="virtual_demo_sub">— AI core is currently training. Results are simulated based on visual presets.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" class="results-section hidden">
+      <div class="results-header">
+        <h2 class="results-header__title" data-i18n="results_title">Analysis Results</h2>
+        <button id="new-analysis-btn" class="new-analysis-btn" type="button" data-i18n="new_analysis_btn">+ New Analysis</button>
+      </div>
+
+      <!-- Top Result Card -->
+      <div class="top-result-card" id="top-result-card">
+        <div class="top-result-card__left">
+          <div class="severity-badge" id="severity-badge">Loading</div>
+          <h3 class="top-result-card__disease" id="result-disease-name">—</h3>
+          <p class="top-result-card__crop" id="result-crop">—</p>
+          <p class="top-result-card__description" id="result-description">—</p>
+
+          <!-- Confidence meter -->
+          <div class="confidence-meter">
+            <div class="confidence-meter__header">
+              <span data-i18n="diag_confidence">Diagnostic Confidence</span>
+              <span id="confidence-pct" class="confidence-meter__value">0%</span>
+            </div>
+            <div class="confidence-meter__bar-bg">
+              <div class="confidence-meter__bar" id="confidence-bar" style="width:0%"></div>
+            </div>
+            <p id="low-confidence-warning" class="low-confidence-warning hidden">
+              <span data-i18n="low_conf_warning">⚠️ <strong>Low Confidence:</strong> The AI is uncertain about this image. Please ensure you uploaded a clear crop leaf.</span>
+            </p>
+          </div>
+        </div>
+        <div class="top-result-card__right">
+          <!-- Image Tabs -->
+          <div class="image-tabs">
+            <button class="image-tab active" data-tab="original" id="tab-original" data-i18n="tab_original">Original</button>
+            <button class="image-tab" data-tab="gradcam" id="tab-gradcam" data-i18n="tab_gradcam">GradCAM 🔥</button>
+          </div>
+          <div class="image-display">
+            <img id="display-original" class="image-display__img" alt="Original leaf" />
+            <img id="display-gradcam" class="image-display__img hidden" alt="GradCAM heatmap" />
+            <div id="gradcam-unavailable" class="gradcam-unavailable hidden">
+              <span>🔬</span>
+              <p data-i18n="gradcam_unavail">GradCAM not available in demo mode</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="details-grid">
+        <!-- Symptoms -->
+        <div class="detail-card detail-card--symptoms">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">🔍</span>
+            <h4 class="detail-card__title" data-i18n="detail_symptoms">Symptoms</h4>
+          </div>
+          <ul class="detail-card__list" id="symptoms-list"></ul>
+        </div>
+
+        <!-- Treatment -->
+        <div class="detail-card detail-card--treatment">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">💊</span>
+            <h4 class="detail-card__title" data-i18n="detail_treatment">Treatment</h4>
+          </div>
+          <ul class="detail-card__list" id="treatment-list"></ul>
+        </div>
+
+        <!-- Prevention -->
+        <div class="detail-card detail-card--prevention">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">🛡️</span>
+            <h4 class="detail-card__title" data-i18n="detail_prevention">Prevention</h4>
+          </div>
+          <ul class="detail-card__list" id="prevention-list"></ul>
+        </div>
+
+        <!-- NEW: AgriScan Pro - Economic Impact -->
+        <div class="detail-card detail-card--pro economic-card">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">💰</span>
+            <h4 class="detail-card__title"><span data-i18n="detail_economic">Economic Impact</span> <span class="badge-pro">PRO</span></h4>
+          </div>
+          <div class="pro-card__body">
+            <div class="input-group">
+              <label for="farm-size"><span data-i18n="farm_size_label">Farm Size:</span> <span id="farm-size-val">1</span> <span data-i18n="acre">Acre</span></label>
+              <input type="range" id="farm-size-slider" min="1" max="100" value="1" step="1">
+            </div>
+            <div class="pro-stat">
+                <span class="pro-stat__label" data-i18n="est_fin_risk">Est. Financial Risk:</span>
+                <span id="financial-loss" class="pro-stat__value">₹0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW: AgriScan Pro - Climate Risk -->
+        <div class="detail-card detail-card--pro climate-card">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">🌡️</span>
+            <h4 class="detail-card__title"><span data-i18n="detail_climate">Climate Risk</span> <span class="badge-pro">PRO</span></h4>
+          </div>
+          <div class="pro-card__body">
+            <div class="risk-meter-container">
+              <div id="risk-meter-fill" class="risk-meter-fill"></div>
+            </div>
+            <p id="weather-risk-text" class="pro-card__text" data-i18n="analyzing_weather">Analyzing weather sensitivity...</p>
+          </div>
+        </div>
+
+        <!-- NEW: AgriScan Pro - Nutrient Advice -->
+        <div class="detail-card detail-card--pro nutrient-card">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">🧪</span>
+            <h4 class="detail-card__title"><span data-i18n="detail_nutrient">Nutrient Recovery</span> <span class="badge-pro">PRO</span></h4>
+          </div>
+          <ul class="detail-card__list" id="nutrient-list"></ul>
+        </div>
+
+        <!-- Top 5 Predictions -->
+        <div class="detail-card detail-card--top5">
+          <div class="detail-card__header">
+            <span class="detail-card__icon">📊</span>
+            <h4 class="detail-card__title" data-i18n="detail_top5">Top 5 Predictions</h4>
+          </div>
+          <div class="top5-chart" id="top5-chart"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about-section" class="about-section">
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-card__icon">🧠</div>
+          <h3 class="about-card__title" data-i18n="about_dl_title">Deep Learning Model</h3>
+          <p class="about-card__text" data-i18n="about_dl_text">
+            Uses <strong>EfficientNetB0</strong> pre-trained on ImageNet with a two-phase transfer learning strategy: 
+            warm-up trains only the classification head, then fine-tuning unlocks the top 30 backbone layers.
+          </p>
+        </div>
+        <div class="about-card">
+          <div class="about-card__icon">🌾</div>
+          <h3 class="about-card__title" data-i18n="about_ds_title">PlantVillage Dataset</h3>
+          <p class="about-card__text" data-i18n="about_ds_text">
+            Trained on the <strong>PlantVillage dataset</strong> — 87,000+ leaf images across 38 disease classes 
+            spanning 15 crops including tomato, apple, corn, grape, and potato.
+          </p>
+        </div>
+        <div class="about-card">
+          <div class="about-card__icon">🗺️</div>
+          <h3 class="about-card__title" data-i18n="about_xai_title">Explainable AI (GradCAM)</h3>
+          <p class="about-card__text" data-i18n="about_xai_text">
+            <strong>Gradient-weighted Class Activation Maps</strong> highlight the exact leaf regions — lesions, spots, 
+            or discoloration — that the model focused on, making every prediction interpretable and trustworthy.
+          </p>
+        </div>
+        <div class="about-card">
+          <div class="about-card__icon">💡</div>
+          <h3 class="about-card__title" data-i18n="about_expert_title">Expert Recommendations</h3>
+          <p class="about-card__text" data-i18n="about_expert_text">
+            Each detection is paired with curated <strong>treatment plans</strong> and <strong>prevention strategies</strong> 
+            sourced from agricultural extension resources, so farmers can act immediately.
+          </p>
+        </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── Footer ─────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <p data-i18n="footer_built_by">AgriScan · Built by <strong>Shreyash Satadeve</strong> · 2026</p>
+    <p class="footer__sub" data-i18n="footer_disclaimer">Disease data sourced from agricultural extension research. For critical decisions, consult a plant pathologist.</p>
+  </footer>
+
+  <script src="/static/js/translations.js"></script>
+  <script src="/static/js/main.js"></script>
+</body>
+</html>

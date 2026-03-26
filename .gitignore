@@ -1,0 +1,32 @@
+# Datasets
+dataset/
+archive (1)/
+PlantVillage/
+
+# Models (Keep main model, exclude others)
+model/best_model.h5
+model/training_history.png
+model/*.png
+model/*.json
+model/*.txt
+# model/agriscan_efficientnet.h5  # Keep this if under 100MB
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Flask / Web
+instance/
+uploads/
+.pytest_cache/
+flask_log.txt
+train_gpu_log.txt
+
+# OS
+.DS_Store
+Thumbs.db
